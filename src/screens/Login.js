@@ -1,11 +1,12 @@
 
 import React, { Component } from 'react';
+import { StackActions, NavigationActions } from 'react-navigation';
 import { Button, StyleSheet, Text, View, Image, Dimensions, ScrollView, AsyncStorage, TextInput } from 'react-native';
 
 
 const width = Dimensions.get('screen').width;
 export default class Login extends Component {
-    constructor(){
+    constructor() {
         super()
         this.state = {
             login: '',
@@ -14,7 +15,21 @@ export default class Login extends Component {
         }
     }
 
-    getLogin(){
+    componentDidMount() {
+        AsyncStorage.getItem('token')
+            .then(token => {
+                console.warn(token)
+                if (token) {
+                    const resetAction = StackActions.reset({
+                        index: 0,
+                        actions: [NavigationActions.navigate({ routeName: 'Feed' })],
+                    });
+                    this.props.navigation.dispatch(resetAction);
+                }
+            })
+    }
+
+    getLogin() {
         const uri = "https://instalura-api.herokuapp.com/api/public/login"
         const requestInfo = {
             method: 'POST',
@@ -27,30 +42,35 @@ export default class Login extends Component {
             })
         }
         fetch(uri, requestInfo)
-            .then(response =>{
-                if(response.ok)
+            .then(response => {
+                if (response.ok)
                     return response.text()
-                throw new Error ("Não foi possível efetuar Login")
+                throw new Error("Não foi possível efetuar Login")
             })
-            .then(token =>{
+            .then(token => {
                 AsyncStorage.setItem('token', token)
                 AsyncStorage.setItem('usuario', this.state.usuario)
+                const resetAction = StackActions.reset({
+                    index: 0,
+                    actions: [NavigationActions.navigate({ routeName: 'Feed' })],
+                });
+                this.props.navigation.dispatch(resetAction);
             })
-            .catch(e => this.setState({messageError: e.message}))
+            .catch(e => this.setState({ messageError: e.message }))
     }
 
     render() {
         return (
             <View style={style.container}>
-            <Text style={style.title}>Login</Text>
+                <Text style={style.title}>Login</Text>
                 <View style={style.form}>
                     <TextInput placeholder="Usuário" style={style.input}
                         onChangeText={texto => this.setState({ usuario: texto })} />
                     <TextInput placeholder="Senha" style={style.input}
-                        onChangeText={texto => this.setState({ senha: texto })} 
-                        secureTextEntry={true}/>
+                        onChangeText={texto => this.setState({ senha: texto })}
+                        secureTextEntry={true} />
 
-                    <Button title='Login' onPress={this.getLogin.bind(this)}/>
+                    <Button title='Login' onPress={this.getLogin.bind(this)} />
                 </View>
 
 
@@ -70,19 +90,19 @@ const style = StyleSheet.create({
         flex: 1
 
     },
-    form:{
+    form: {
         width: width * 0.8
     },
-    input:{
+    input: {
         height: 40,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc'
     },
-    title:{
+    title: {
         fontWeight: 'bold',
         fontSize: 26
     },
-    erro:{
+    erro: {
         marginTop: 15,
         color: '#e74c3c'
     }

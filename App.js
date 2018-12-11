@@ -9,6 +9,17 @@ const AppNavigator = createStackNavigator({
       title: 'Login',
       
     }),
+  },
+  Feed: {
+    screen: Feed,
+    navigationOptions: () => ({
+      title: 'Feed',
+      
+    }),
+  },
+  ProfileUser: {
+    screen: Feed,
+   
   }
 });
 

@@ -24,7 +24,7 @@ export default class InputComment extends Component {
                 <TextInput style={style.input} placeholder="Adicionar novo comentário"
                     ref={input => this.inputComment = input} onChangeText={text => this.setState({ valueComment: text })} />
                 <TouchableOpacity onPress={() => {
-                    this.props.commentCallBack(this.state.valueComment, this.inputComment, this.props.idFoto);
+                    this.props.commentCallBack(this.props.idFoto, this.state.valueComment, this.inputComment);
                     this.setState({valueComment: ''})
                 }}>
                     <Image style={style.send} source={require('../../resources/send.png')} />

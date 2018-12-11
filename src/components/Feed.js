@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
-import { Platform, StyleSheet, Text, View, Image, Dimensions, ScrollView, FlatList, AppRegistry } from 'react-native';
+import { StackActions, NavigationActions } from 'react-navigation';
+import { Dimensions, FlatList, AsyncStorage } from 'react-native';
 import Post from './Post'
+import Login from '../screens/Login'
+import FetchService from '../services/FetchService'
+import NotificationAlert from '../api/Notification'
 
 
 const width = Dimensions.get('screen').width;
@@ -9,88 +13,111 @@ export default class Feed extends Component {
   constructor() {
     super()
     this.state = {
-      fotos: []
+      fotos: [],
     }
   }
 
-  comment(valueComment, inputComment, idFoto) {
+  comment(idFoto, valueComment, inputComment) {
     if (valueComment != '') {
+      const originalList = this.state.fotos
       const foto = this.state.fotos.find(foto => foto.id === idFoto)
-
-      console.warn(this.state.valueComment)
-      const newList = [...foto.comentarios, {
-        id: valueComment,
-        login: 'Novo usuário',
-        texto: valueComment,
-      }]
-
-      const fotoupdate = {
-        ...this.state.foto,
-        comentarios: newList,
+      const comment = {
+        texto: valueComment
       }
-
-      const fotos = this.state.fotos.map(foto => foto.id === fotoupdate.id ? fotoupdate : foto)
-      this.setState({
-        fotos: fotos,
-      })
-
-      inputComment.clear()
+      FetchService.post(`/fotos/${idFoto}/comment`, comment)
+        .then(comentario => [...foto.comentarios, comentario])
+        .then(newList => {
+          const fotoupdate = {
+            ...foto,
+            comentarios: newList,
+          }
+          const fotos = this.state.fotos.map(foto => foto.id === fotoupdate.id ? fotoupdate : foto)
+          this.setState({
+            fotos: fotos,
+          })
+          inputComment.clear()
+        })
+        .catch(e => {
+          console.warn('e', e)
+          this.setState({ fotos: originalList })
+          inputComment.clear()
+          NotificationAlert.show('Ops..', 'Algo deu errado!')
+        })
     }
   }
 
 
   like(idFoto) {
+    const originalList = this.state.fotos
     const foto = this.state.fotos.find(foto => foto.id === idFoto)
-    let newList = []
-    if (!foto.likeada) {
-      newList = [
-        ...foto.likers,
-        { login: 'novousuário' }
-      ]
-    } else {
-      newList = foto.likers.filter(liker => {
-        return liker.login !== 'novousuário'
+
+    AsyncStorage.getItem('usuario')
+      .then(userLogged => {
+        let newList = []
+        if (!foto.likeada) {
+          newList = [
+            ...foto.likers,
+            { login: userLogged }
+          ]
+        } else {
+          newList = foto.likers.filter(liker => {
+            return liker.login !== userLogged
+          })
+        }
+        return newList
       })
-    }
+      .then(newList => {
+        const fotoupdate = {
+          ...foto,
+          likeada: !foto.likeada,
+          likers: newList
+        }
 
-    const fotoupdate = {
-      ...foto,
-      likeada: !foto.likeada,
-      likers: newList
-    }
+        const fotos = this.state.fotos.map(foto => foto.id === fotoupdate.id ? fotoupdate : foto)
+        this.setState({
+          fotos: fotos
+        })
+      })
 
-    const fotos = this.state.fotos.map(foto => foto.id === fotoupdate.id ? fotoupdate : foto)
-    this.setState({
-      fotos: fotos
-    })
+    FetchService.post(`/fotos/${idFoto}/like`)
+      .catch(e => {
+        console.warn('e', e)
+        this.setState({ fotos: originalList })
+        NotificationAlert.show('Ops..', 'Algo deu errado!')
+      })
   }
 
   componentDidMount() {
-    fetch('https://instalura-api.herokuapp.com/api/public/fotos/rafael')
-      .then(response => response.json())
+
+    FetchService.get('/fotos')
       .then(json => this.setState({ fotos: json }))
+      .catch(e => {
+        console.warn('e', e)
+        NotificationAlert.show('Ops..', 'Algo deu errado!')
+      })
+  }
+
+  showProfile(idFoto) {
+    const foto = this.state.fotos.find(foto => foto.id === idFoto)
+    
+    const resetAction = StackActions.push({
+       routeName: 'ProfileUser',
+    });
+    
+    this.props.navigation.dispatch(resetAction);
   }
 
   render() {
     return (
-      <FlatList style={style.container}
+      <FlatList
         keyExtractor={item => item.id}
         data={this.state.fotos}
         renderItem={({ item }) =>
           <Post foto={item} likeCallBack={this.like.bind(this)}
-            commentCallBack={this.comment.bind(this)} />
+            commentCallBack={this.comment.bind(this)}
+            showProfileCallBack={this.showProfile.bind(this)} />
         }
       />
-
-      // <Login />
     );
   }
 }
-
-
-const style = StyleSheet.create({
-  container: {
-    marginTop: 20,
-  },
-
-})
