@@ -7,6 +7,7 @@ import FetchService from '../services/FetchService'
 import NotificationAlert from '../api/Notification'
 
 
+
 const width = Dimensions.get('screen').width;
 export default class Feed extends Component {
 
@@ -15,6 +16,8 @@ export default class Feed extends Component {
     this.state = {
       fotos: [],
     }
+
+
   }
 
   comment(idFoto, valueComment, inputComment) {
@@ -88,8 +91,11 @@ export default class Feed extends Component {
   }
 
   componentDidMount() {
-
-    FetchService.get('/fotos')
+    let uri = '/fotos'
+    if (this.props.navigation.state.params) {
+      uri = `/public/fotos/${this.props.navigation.state.params.title}`
+    }
+    FetchService.get(uri)
       .then(json => this.setState({ fotos: json }))
       .catch(e => {
         console.warn('e', e)
@@ -97,15 +103,24 @@ export default class Feed extends Component {
       })
   }
 
+
   showProfile(idFoto) {
     const foto = this.state.fotos.find(foto => foto.id === idFoto)
-    
-    const resetAction = StackActions.push({
-       routeName: 'ProfileUser',
-    });
-    
-    this.props.navigation.dispatch(resetAction);
+
+    this.props.navigation.navigate('ProfileUser', { title: foto.loginUsuario });
   }
+
+  static navigationOptions = ({ navigation }) => ({
+    title: navigation.state.params ? navigation.state.params.title : '',
+    // headerStyle: { backgroundColor: color.theme },
+  });
+
+
+
+
+
+
+
 
   render() {
     return (

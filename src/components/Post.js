@@ -26,7 +26,7 @@ export default class Post extends Component {
         return (
             <View key={this.props.foto.id}>
                 <TouchableOpacity style={style.header}
-                    onPress={showProfileCallBack}>
+                    onPress={() => {showProfileCallBack(foto.id)}}>
                     <Image source={{ uri: this.props.foto.urlPerfil }} style={style.userImage} />
                     <Text>{this.props.foto.loginUsuario}</Text>
                 </TouchableOpacity>
